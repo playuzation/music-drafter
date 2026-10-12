@@ -93,11 +93,18 @@ function play(mode) {
     },
     stepSec,
     loop: () => state.loop,
-    onPos(pos) {
-      state.pos = pos;
-      if (pos) return ui.playhead(pos, state.measure);
-      state.playing = null;
-      ui.render(state);
+    onPos(pos, frac) {
+      if (!pos) {
+        state.pos = state.playing = null;
+        return ui.render(state);
+      }
+      if (pos !== state.pos) {
+        const newMeasure = pos.m !== state.pos?.m;
+        state.pos = pos;
+        if (newMeasure) ui.renderScore(state);
+        ui.playhead(pos, state.measure);
+      }
+      ui.scoreHead(pos.s + frac);
     },
   });
 }

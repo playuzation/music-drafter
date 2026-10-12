@@ -85,7 +85,8 @@ export function preview(event) {
 //   at(i)      { events, pos } for step i; `pos` is handed to onPos when that step becomes audible
 //   stepSec()  seconds per step
 //   loop()     whether to start another pass
-//   onPos(pos) called on animation frames as steps are heard; onPos(null) once playback has ended
+//   onPos(pos, frac) called every animation frame with the audible step's `pos` and how far into that step
+//              playback is (0-1); onPos(null) once playback has ended
 export function play(seq) {
   stop();
   const ac = audio();
@@ -115,16 +116,17 @@ export function play(seq) {
     }
   }, TICK_MS);
 
+  let heard = null; // [time, pos] of the step being heard
   const draw = () => {
     const now = ac.currentTime - (ac.outputLatency || 0);
     let due = 0;
     while (due < queue.length && queue[due][0] <= now) due++;
     if (due) {
-      const pos = queue[due - 1][1];
+      heard = queue[due - 1];
       queue.splice(0, due);
-      seq.onPos(pos);
-      if (!pos) return;
+      if (!heard[1]) return seq.onPos(null);
     }
+    if (heard) seq.onPos(heard[1], Math.min(1, (now - heard[0]) / seq.stepSec()));
     frame = requestAnimationFrame(draw);
   };
   frame = requestAnimationFrame(draw);
