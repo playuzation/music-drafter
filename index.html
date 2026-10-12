@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1116">
+  <meta name="description" content="마디 단위로 작곡하고 바로 반복 재생해 보는 웹 작곡 스케치북">
+  <title>Music Drafter</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+  <header class="wrap head">
+    <h1>Music Drafter</h1>
+    <div class="settings">
+      <label>BPM <input id="bpm" data-set="bpm" type="number" min="30" max="300" step="1" inputmode="numeric"></label>
+      <label>스케일
+        <select id="scale" data-set="scale">
+          <option value="major">메이저 (장조)</option>
+          <option value="minor">마이너 (단조)</option>
+        </select>
+      </label>
+      <button data-act="save">JSON 저장</button>
+      <button data-act="open">JSON 불러오기</button>
+      <input id="file" type="file" accept=".json,application/json" hidden>
+    </div>
+    <details class="help">
+      <summary>사용법</summary>
+      <ul>
+        <li>격자를 탭하면 선택한 길이의 음표가 그 자리에 놓입니다. 아래 <b>1~8</b> 버튼은 커서(파란 선) 위치에 차례로 입력합니다.</li>
+        <li>음표를 탭하면 선택됩니다. 길이 버튼으로 길이를 바꾸고, 이음표·음표 삭제를 쓸 수 있습니다. 음 높이는 같은 자리의 다른 줄을 탭하면 바뀝니다. 드럼 트랙은 탭하면 지워집니다.</li>
+        <li><b>쉼표</b>는 커서부터 선택한 길이만큼 비웁니다. 음표가 없는 구간은 모두 쉼표입니다.</li>
+        <li><b>이음표</b>는 바로 다음에 오는 같은 높이의 음과 끊김 없이 이어 재생합니다. 마디를 넘어서도 이어집니다.</li>
+        <li>박자 눈금(1 2 3 4)을 탭하면 커서를 옮깁니다. 재생 중에 편집해도 바로 반영됩니다.</li>
+      </ul>
+    </details>
+  </header>
+
+  <nav class="transport" aria-label="재생">
+    <div class="wrap">
+      <button data-act="play" data-mode="measure">▶ 현재 마디</button>
+      <button data-act="play" data-mode="song">▶ 전체</button>
+      <button data-act="stop">■ 정지</button>
+      <label class="check"><input id="loop" data-set="loop" type="checkbox"> 반복</label>
+    </div>
+  </nav>
+
+  <main class="wrap">
+    <section class="measures" aria-label="마디">
+      <div class="measure-bar">
+        <strong id="measure-info"></strong>
+        <button id="add-measure" data-act="addMeasure">+ 추가</button>
+        <button id="copy-measure" data-act="copyMeasure">복제</button>
+        <button id="del-measure" data-act="delMeasure">삭제</button>
+      </div>
+      <div id="tabs" class="tabs"></div>
+    </section>
+    <section id="lanes" aria-label="트랙"></section>
+    <button id="add-track" class="add-track" data-act="addTrack"></button>
+  </main>
+
+  <footer class="palette" aria-label="입력">
+    <div class="wrap">
+      <div id="durs" class="row durs">
+        <button data-act="dur" data-v="1">¼박</button>
+        <button data-act="dur" data-v="2">½박</button>
+        <button data-act="dur" data-v="4">1박</button>
+        <button data-act="dur" data-v="8">2박</button>
+        <button data-act="dur" data-v="16">4박</button>
+        <button id="dot" data-act="dot" title="점음표: 길이 ×1.5">점(·)</button>
+      </div>
+      <div id="degs" class="row degs"></div>
+      <div class="row acts">
+        <button data-act="rest">쉼표</button>
+        <button id="tie" data-act="tie">이음표</button>
+        <button id="del" data-act="del">음표 삭제</button>
+        <button data-act="clear">마디 비우기</button>
+      </div>
+    </div>
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
