@@ -1,31 +1,41 @@
-// Audio engine (tree: main → audio → synth): AudioContext lifecycle, note preview and a look-ahead step sequencer.
-// It knows nothing about songs: the caller supplies the events for each step.
+// Audio engine (tree: main → audio → synth, wav): AudioContext lifecycle, note preview, a look-ahead step
+// sequencer and offline rendering to WAV. It knows nothing about songs: the caller supplies the events.
 import { createSynth } from './synth.js';
+import { encodeWav } from './wav.js';
 
 export { DRUM_NAMES } from './synth.js';
 
 const LOOKAHEAD = 0.12; // seconds of audio scheduled ahead of the clock
 const TICK_MS = 25;
+const RENDER_RATE = 44100;
+const RENDER_TAIL = 1.5; // seconds rendered after the last step so notes and cymbals ring out (crash: 1.4 s)
+const RENDER_SLICE = 1; // seconds of voices created at a time while rendering
 
 let ctx, synth, master, bus;
 let timer = 0;
 let frame = 0;
+
+// Master gain → limiter → destination. Live playback and offline rendering share it, so files sound the same.
+function masterBus(ac) {
+  const limiter = ac.createDynamicsCompressor();
+  limiter.threshold.value = -8;
+  limiter.knee.value = 6;
+  limiter.ratio.value = 12;
+  limiter.attack.value = 0.003;
+  limiter.release.value = 0.15;
+  limiter.connect(ac.destination);
+  const gain = ac.createGain();
+  gain.gain.value = 0.8;
+  gain.connect(limiter);
+  return gain;
+}
 
 // Lazily creates/resumes the AudioContext. The first call must come from a user gesture (mobile autoplay rules).
 function audio() {
   if (!ctx) {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
     if (navigator.audioSession) navigator.audioSession.type = 'playback'; // iOS: sound even in silent mode
-    const limiter = ctx.createDynamicsCompressor();
-    limiter.threshold.value = -8;
-    limiter.knee.value = 6;
-    limiter.ratio.value = 12;
-    limiter.attack.value = 0.003;
-    limiter.release.value = 0.15;
-    limiter.connect(ctx.destination);
-    master = ctx.createGain();
-    master.gain.value = 0.8;
-    master.connect(limiter);
+    master = masterBus(ctx);
     synth = createSynth(ctx);
   }
   if (ctx.state !== 'running') ctx.resume();
@@ -33,9 +43,37 @@ function audio() {
 }
 
 // event = { drum: 1-8 } | { wave, freq, dur (seconds) }
-function sound(event, t, out) {
-  if (event.drum) synth.drum(out, event.drum - 1, t);
-  else synth.tone(out, event.wave, event.freq, t, event.dur);
+function sound(event, t, out, voice = synth) {
+  if (event.drum) voice.drum(out, event.drum - 1, t);
+  else voice.tone(out, event.wave, event.freq, t, event.dur);
+}
+
+// Renders time-ordered events ({ time, ...event }) spanning `seconds` offline and returns a mono 16-bit WAV file.
+export async function renderWav(events, seconds) {
+  const ac = new OfflineAudioContext(1, Math.ceil((seconds + RENDER_TAIL) * RENDER_RATE), RENDER_RATE);
+  const out = masterBus(ac);
+  const voice = createSynth(ac);
+  let next = 0;
+  const scheduleBefore = end => {
+    for (; next < events.length && events[next].time < end; next++) {
+      const { time, ...event } = events[next];
+      sound(event, time, out, voice);
+    }
+  };
+  // Creating every voice up front makes long songs render very slowly, so voices are added one slice ahead of
+  // the render position. Firefox has no offline suspend() and gets them all at once.
+  if (!ac.suspend) {
+    scheduleBefore(Infinity);
+  } else {
+    scheduleBefore(RENDER_SLICE);
+    for (let t = RENDER_SLICE; t < seconds; t += RENDER_SLICE) {
+      ac.suspend(t - 0.1).then(() => {
+        scheduleBefore(t + RENDER_SLICE);
+        ac.resume();
+      });
+    }
+  }
+  return encodeWav(await ac.startRendering());
 }
 
 export function preview(event) {
@@ -47,7 +85,8 @@ export function preview(event) {
 //   at(i)      { events, pos } for step i; `pos` is handed to onPos when that step becomes audible
 //   stepSec()  seconds per step
 //   loop()     whether to start another pass
-//   onPos(pos) called on animation frames as steps are heard; onPos(null) once playback has ended
+//   onPos(pos, frac) called every animation frame with the audible step's `pos` and how far into that step
+//              playback is (0-1); onPos(null) once playback has ended
 export function play(seq) {
   stop();
   const ac = audio();
@@ -77,16 +116,17 @@ export function play(seq) {
     }
   }, TICK_MS);
 
+  let heard = null; // [time, pos] of the step being heard
   const draw = () => {
     const now = ac.currentTime - (ac.outputLatency || 0);
     let due = 0;
     while (due < queue.length && queue[due][0] <= now) due++;
     if (due) {
-      const pos = queue[due - 1][1];
+      heard = queue[due - 1];
       queue.splice(0, due);
-      seq.onPos(pos);
-      if (!pos) return;
+      if (!heard[1]) return seq.onPos(null);
     }
+    if (heard) seq.onPos(heard[1], Math.min(1, (now - heard[0]) / seq.stepSec()));
     frame = requestAnimationFrame(draw);
   };
   frame = requestAnimationFrame(draw);

@@ -42,6 +42,9 @@ function preview(deg, len) {
   audio.preview(soundOf(editedTrack(), deg, Math.min(len, S.STEPS_PER_BEAT)));
 }
 
+// Sounds starting at (measure m, step s) while measures first..last are played.
+const eventsAt = (m, s, first, last) => S.attacksAt(state.song, m, s, first, last).map(a => soundOf(a.track, a.deg, a.steps));
+
 function goMeasure(m) {
   state.measure = m;
   state.cursor = 0;
@@ -86,16 +89,22 @@ function play(mode) {
     at(i) {
       const m = first + Math.floor(i / S.STEPS);
       const s = i % S.STEPS;
-      const events = S.attacksAt(state.song, m, s, first, last).map(a => soundOf(a.track, a.deg, a.steps));
-      return { events, pos: { m, s } };
+      return { events: eventsAt(m, s, first, last), pos: { m, s } };
     },
     stepSec,
     loop: () => state.loop,
-    onPos(pos) {
-      state.pos = pos;
-      if (pos) return ui.playhead(pos, state.measure);
-      state.playing = null;
-      ui.render(state);
+    onPos(pos, frac) {
+      if (!pos) {
+        state.pos = state.playing = null;
+        return ui.render(state);
+      }
+      if (pos !== state.pos) {
+        const newMeasure = pos.m !== state.pos?.m;
+        state.pos = pos;
+        if (newMeasure) ui.renderScore(state);
+        ui.playhead(pos, state.measure);
+      }
+      ui.scoreHead(pos.s + frac);
     },
   });
 }
@@ -104,6 +113,31 @@ function stop() {
   audio.stop();
   state.playing = null;
   state.pos = null;
+}
+
+// Renders every measure once at the current tempo and downloads it as a WAV file.
+let rendering = false;
+async function saveWav() {
+  if (rendering) return;
+  rendering = true;
+  ui.toast('WAV 파일을 만드는 중입니다…');
+  try {
+    const last = S.measureCount(state.song) - 1;
+    const events = [];
+    for (let m = 0; m <= last; m++) {
+      for (let s = 0; s < S.STEPS; s++) {
+        const time = (m * S.STEPS + s) * stepSec();
+        for (const event of eventsAt(m, s, 0, last)) events.push({ time, ...event });
+      }
+    }
+    const wav = await audio.renderWav(events, (last + 1) * S.STEPS * stepSec());
+    ui.download(`music-drafter-${stamp()}.wav`, wav, 'audio/wav');
+    ui.toast('WAV 파일을 저장했습니다.');
+  } catch (e) {
+    ui.toast(`WAV 저장 실패: ${e.message}`);
+  } finally {
+    rendering = false;
+  }
 }
 
 const actions = {
@@ -215,6 +249,9 @@ const actions = {
 
   save() {
     ui.download(`music-drafter-${stamp()}.json`, S.toJSON(state.song));
+  },
+  wav() {
+    saveWav();
   },
   import({ text }) {
     let song;

@@ -190,6 +190,31 @@ input[type=number] {
 .rest-key { align-self: center; margin-top: 6px; color: var(--muted); font-size: 11px; text-align: right; }
 .add-track { width: 100%; margin: 10px 0 16px; border-style: dashed; background: transparent; }
 
+/* score (staff view): clef and flat glyphs come from the Noto Music subset loaded in index.html */
+.score-panel { margin-top: 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.score-panel summary { color: var(--muted); font-size: 13px; cursor: pointer; }
+.score svg { display: block; width: 100%; max-width: 560px; height: auto; margin-top: 10px; overflow: visible; }
+.score text { fill: var(--muted); }
+.score .clef, .score .flat { font-family: "Noto Music", "Segoe UI Symbol", "Apple Symbols", serif; }
+.score .clef { font-size: 34px; }
+.score .flat { font-size: 20px; }
+.score .meter { font: 700 17px Georgia, "Times New Roman", serif; text-anchor: middle; }
+.score .tlabel { font-size: 9px; }
+.score .tlabel { fill: var(--c); }
+.score .staff, .score .ledger { stroke: #4a5163; }
+.score .sign { fill: var(--muted); }
+.score .nt { fill: var(--c); stroke: var(--c); }
+.score .rest { fill: var(--muted); stroke: var(--muted); }
+.score ellipse, .score circle, .score rect { stroke: none; }
+.score .line, .score .tie { fill: none; stroke-width: 1.4; }
+.score .hollow { fill: none; stroke: inherit; stroke-width: 1.6; }
+.score .tie.open { stroke-dasharray: 2 2; }
+.score .dur { opacity: .2; }
+.score .nt.live { fill: #fff; stroke: #fff; }
+.score .nt.live .dur { fill: var(--c); opacity: .55; }
+.score .score-head { stroke: var(--play); stroke-width: 2; }
+.score .off { display: none; }
+
 /* input palette (stays at the bottom) */
 .palette {
   position: sticky;
