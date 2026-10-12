@@ -67,14 +67,14 @@ async function readFile(input) {
 
 // ---- output ----
 
-export function download(name, text) {
+export function download(name, data, type = 'application/json') {
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  a.href = URL.createObjectURL(new Blob([data], { type }));
   a.download = name;
   document.body.append(a);
   a.click();
   a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  setTimeout(() => URL.revokeObjectURL(a.href), 40000); // Safari fails the download if revoked too early
 }
 
 export function toast(message) {
