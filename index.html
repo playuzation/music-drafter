@@ -7,6 +7,7 @@
   <meta name="description" content="마디 단위로 작곡하고 바로 반복 재생해 보는 웹 작곡 스케치북">
   <title>Music Drafter</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Music&text=%F0%9D%84%9E%F0%9D%84%9F%F0%9D%84%A2%E2%99%AD&display=swap">
   <link rel="stylesheet" href="style.css">
   <script type="module" src="js/main.js"></script>
 </head>
@@ -57,6 +58,10 @@
       </div>
       <div id="tabs" class="tabs"></div>
     </section>
+    <details class="score-panel" open>
+      <summary id="score-title">악보</summary>
+      <div id="score" class="score"></div>
+    </details>
     <section id="lanes" aria-label="트랙"></section>
     <button id="add-track" class="add-track" data-act="addTrack"></button>
   </main>

@@ -1,5 +1,6 @@
-// DOM view (tree leaf): renders the app state and turns user input into action objects for main.js.
-// It imports nothing; init() hands it the spec constants and the label/tie queries it needs.
+// DOM view (tree: main → ui → score): renders the app state and turns user input into action objects for main.js.
+// Apart from its score child it imports nothing; init() hands it the spec constants and label/tie queries.
+import { SCORE_W, STAFF_H, headX, restSlots, staffSVG } from './score.js';
 
 const TYPE_NAMES = { sine: '정현파', triangle: '삼각파', square: '사각파', sawtooth: '톱니파', drum: '드럼' };
 const COLORS = ['#5ad1ff', '#ff6fae', '#b6f36b', '#ffc85a', '#a98bff', '#ff8a65', '#4fe0b0', '#e6e66e'];
@@ -112,7 +113,35 @@ export function render(s) {
   $('add-track').textContent = `+ 트랙 추가 (${tracks.length}/${MAX_TRACKS})`;
 
   renderPalette(s);
+  renderScore(s);
   playhead(s.pos, s.measure);
+}
+
+// Staff view of every track: the measure being played, otherwise the one being edited.
+export function renderScore(s) {
+  const m = s.pos ? s.pos.m : s.measure;
+  const { tracks } = s.song;
+  const h = tracks.length * STAFF_H;
+  const staves = tracks.map((track, t) => {
+    const staff = staffSVG({
+      track,
+      notes: track.measures[m] || [],
+      minor: s.song.scale === 'minor',
+      steps: ctx.spec.STEPS,
+      tieIn: n => ctx.tieIn(t, m, n),
+      tieOut: n => ctx.tieOut(t, m, n),
+    });
+    return `<g transform="translate(0 ${t * STAFF_H})" style="--c:${COLORS[t]}"><text class="tlabel" x="36" y="10">트랙 ${t + 1}</text>${staff}</g>`;
+  });
+  $('score-title').textContent = `악보 · 마디 ${m + 1}`;
+  $('score').innerHTML = `<svg viewBox="0 0 ${SCORE_W} ${h}" role="img" aria-label="마디 ${m + 1} 악보">${staves.join('')}<line class="score-head off" y1="0" y2="${h}"/></svg>`;
+}
+
+// Moves the score's playhead line to a fractional step of the displayed measure.
+export function scoreHead(step) {
+  const head = $('score').querySelector('.score-head');
+  head.classList.remove('off');
+  head.setAttribute('transform', `translate(${headX(step, ctx.spec.STEPS)} 0)`);
 }
 
 // Moves the playhead without re-rendering: highlights the playing measure tab and step column.
@@ -121,6 +150,10 @@ export function playhead(pos, measure) {
   for (const el of $('lanes').querySelectorAll('.playhead')) {
     el.hidden = pos?.m !== measure;
     if (!el.hidden) el.style.left = x(pos.s);
+  }
+  for (const g of $('score').querySelectorAll('.nt')) {
+    const start = +g.dataset.s;
+    g.classList.toggle('live', !!pos && start <= pos.s && pos.s < start + +g.dataset.l);
   }
 }
 
@@ -185,20 +218,11 @@ function notesHTML(s, t, notes, full) {
 // Steps covered by no note are rests, shown as the largest beat-aligned rest values (as in sheet music).
 function restsHTML(notes) {
   const { STEPS, STEPS_PER_BEAT } = ctx.spec;
-  const busy = Array(STEPS).fill(false);
-  for (const n of notes) busy.fill(true, n.start, n.start + n.len);
   let html = '';
-  for (let p = 0; p < STEPS; ) {
-    if (busy[p]) {
-      p++;
-      continue;
-    }
-    let d = STEPS;
-    while (p % d || p + d > STEPS || busy.slice(p, p + d).includes(true)) d /= 2;
+  for (const [p, d] of restSlots(notes, STEPS)) {
     const beats = d / STEPS_PER_BEAT;
     const text = d >= STEPS_PER_BEAT ? `쉼표 ${beats}박` : '쉼';
     html += `<span class="rest" style="left:${x(p)};width:${x(d)}" title="쉼표 ${beats}박">${text}</span>`;
-    p += d;
   }
   return html;
 }
