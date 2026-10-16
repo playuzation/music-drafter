@@ -1,7 +1,8 @@
 // Controller (tree root): owns the app state, applies UI actions to the song and drives playback.
 //   main ─┬─ song ── theory
-//         ├─ audio ── synth
-//         └─ ui
+//         ├─ audio ─┬─ synth
+//         │         └─ wav
+//         └─ ui ── score
 import * as S from './song.js';
 import * as audio from './audio.js';
 import * as ui from './ui.js';
@@ -10,8 +11,17 @@ const DOTTABLE = [2, 4, 8]; // ½, 1 and 2 beats may be dotted (×1.5 → 3, 6, 
 // Note lengths that map back onto the length buttons: steps → [dur, dotted]
 const LENGTH_INPUT = { 1: [1, false], 2: [2, false], 3: [2, true], 4: [4, false], 6: [4, true], 8: [8, false], 12: [8, true], 16: [16, false] };
 
+// The current song survives page switches and reloads within the browser tab.
+function sessionSong() {
+  try {
+    return S.fromJSON(sessionStorage.getItem(S.SESSION_KEY));
+  } catch {
+    return S.createSong();
+  }
+}
+
 const state = {
-  song: S.createSong(),
+  song: sessionSong(),
   measure: 0, // measure being edited
   track: 0, // track being edited
   cursor: 0, // step where the next palette input lands
@@ -23,7 +33,7 @@ const state = {
   pos: null, // audible playhead { m, s }
 };
 
-const stepSec = () => 60 / state.song.bpm / S.STEPS_PER_BEAT;
+const stepSec = () => S.stepSeconds(state.song);
 const inputLen = () => (state.dotted && DOTTABLE.includes(state.dur) ? state.dur * 1.5 : state.dur);
 const snap = step => step - (step % Math.min(state.dur, S.STEPS_PER_BEAT));
 const beats = steps => steps / S.STEPS_PER_BEAT;
@@ -33,17 +43,9 @@ const hasNotes = measures => measures.some(notes => notes.length);
 const pad = n => String(n).padStart(2, '0');
 const stamp = (d = new Date()) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
 
-function soundOf(track, deg, steps) {
-  if (track.type === 'drum') return { drum: deg };
-  return { wave: track.type, freq: S.noteFreq(state.song, track, deg), dur: steps * stepSec() };
-}
-
 function preview(deg, len) {
-  audio.preview(soundOf(editedTrack(), deg, Math.min(len, S.STEPS_PER_BEAT)));
+  audio.preview(S.soundOf(state.song, editedTrack(), deg, Math.min(len, S.STEPS_PER_BEAT)));
 }
-
-// Sounds starting at (measure m, step s) while measures first..last are played.
-const eventsAt = (m, s, first, last) => S.attacksAt(state.song, m, s, first, last).map(a => soundOf(a.track, a.deg, a.steps));
 
 function goMeasure(m) {
   state.measure = m;
@@ -89,7 +91,7 @@ function play(mode) {
     at(i) {
       const m = first + Math.floor(i / S.STEPS);
       const s = i % S.STEPS;
-      return { events: eventsAt(m, s, first, last), pos: { m, s } };
+      return { events: S.soundsAt(state.song, m, s, first, last), pos: { m, s } };
     },
     stepSec,
     loop: () => state.loop,
@@ -122,15 +124,8 @@ async function saveWav() {
   rendering = true;
   ui.toast('WAV 파일을 만드는 중입니다…');
   try {
-    const last = S.measureCount(state.song) - 1;
-    const events = [];
-    for (let m = 0; m <= last; m++) {
-      for (let s = 0; s < S.STEPS; s++) {
-        const time = (m * S.STEPS + s) * stepSec();
-        for (const event of eventsAt(m, s, 0, last)) events.push({ time, ...event });
-      }
-    }
-    const wav = await audio.renderWav(events, (last + 1) * S.STEPS * stepSec());
+    const { sounds, seconds } = S.songSounds(state.song);
+    const wav = await audio.renderWav(sounds, seconds);
     ui.download(`music-drafter-${stamp()}.wav`, wav, 'audio/wav');
     ui.toast('WAV 파일을 저장했습니다.');
   } catch (e) {
@@ -288,6 +283,11 @@ ui.init({
   onAction(action) {
     actions[action.act]?.(action);
     ui.render(state);
+    try {
+      sessionStorage.setItem(S.SESSION_KEY, S.toJSON(state.song));
+    } catch {
+      // storage unavailable (e.g. blocked): the song just won't survive a page switch
+    }
   },
 });
 ui.render(state);

@@ -50,6 +50,11 @@ function sound(event, t, out, voice = synth) {
 
 // Renders time-ordered events ({ time, ...event }) spanning `seconds` offline and returns a mono 16-bit WAV file.
 export async function renderWav(events, seconds) {
+  return encodeWav(await renderBuffer(events, seconds));
+}
+
+// Same rendering, returned as an AudioBuffer (with the ring-out tail after `seconds`).
+export async function renderBuffer(events, seconds) {
   const ac = new OfflineAudioContext(1, Math.ceil((seconds + RENDER_TAIL) * RENDER_RATE), RENDER_RATE);
   const out = masterBus(ac);
   const voice = createSynth(ac);
@@ -73,7 +78,7 @@ export async function renderWav(events, seconds) {
       });
     }
   }
-  return encodeWav(await ac.startRendering());
+  return ac.startRendering();
 }
 
 export function preview(event) {
