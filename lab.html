@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1116">
+  <meta name="description" content="직접 그린 파형으로 소리를 내고 음 높이를 바꿔 들어 보는 페이지">
+  <title>파형 만들기 · Music Drafter</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="js/lab/main.js"></script>
+</head>
+<body>
+  <header class="wrap head">
+    <h1>Music Drafter</h1>
+    <nav class="pages" aria-label="페이지">
+      <a href="index.html">작곡</a>
+      <a href="lab.html" aria-current="page">파형 만들기</a>
+      <a href="fx.html">효과</a>
+    </nav>
+  </header>
+
+  <main class="wrap panels">
+    <section>
+      <h2>파형</h2>
+      <canvas id="wave" aria-label="파형 한 주기 (드래그해서 그리기)"></canvas>
+      <div class="presets">
+        <button data-preset="sine">정현파</button>
+        <button data-preset="triangle">삼각파</button>
+        <button data-preset="square">사각파</button>
+        <button data-preset="sawtooth">톱니파</button>
+        <button data-preset="flat">비우기</button>
+      </div>
+      <p class="hint">캔버스를 드래그해서 한 주기의 파형을 그리세요. 기본 파형을 불러와 고쳐도 됩니다. 소리를 내는 중에 그리면 소리도 바로 바뀝니다.</p>
+    </section>
+
+    <section class="sound">
+      <h2>소리</h2>
+      <button id="play">▶ 소리 내기</button>
+      <label for="pitch">음 높이 <strong id="pitch-label"></strong></label>
+      <input id="pitch" type="range" min="36" max="96" step="1" value="60">
+    </section>
+  </main>
+</body>
+</html>

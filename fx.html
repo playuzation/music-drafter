@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f1116">
+  <meta name="description" content="만든 곡에 에코·리버브·컴프레서·디스토션·리미터를 하나씩 또는 겹쳐 걸어 들어 보는 페이지">
+  <title>효과 · Music Drafter</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="js/fx/main.js"></script>
+</head>
+<body>
+  <header class="wrap head">
+    <h1>Music Drafter</h1>
+    <nav class="pages" aria-label="페이지">
+      <a href="index.html">작곡</a>
+      <a href="lab.html">파형 만들기</a>
+      <a href="fx.html" aria-current="page">효과</a>
+    </nav>
+  </header>
+
+  <main class="wrap panels">
+    <section>
+      <h2>곡</h2>
+      <p id="song-info" class="song-info"></p>
+      <div class="buttons">
+        <button id="play" disabled>▶ 반복 재생</button>
+        <button id="stop">■ 정지</button>
+        <button id="open">JSON 불러오기</button>
+      </div>
+      <input id="file" type="file" accept=".json,application/json" hidden>
+      <p id="status" class="hint" role="status"></p>
+    </section>
+
+    <section>
+      <h2>효과</h2>
+      <p class="hint">위에서 아래 순서로 소리가 지나갑니다. 하나만 켜거나 여러 개를 겹쳐 켤 수 있고, 재생 중에도 바로 반영됩니다.</p>
+      <div id="effects" class="effects"></div>
+    </section>
+  </main>
+</body>
+</html>

@@ -55,6 +55,17 @@ input[type=number] {
 .help ul { margin: 6px 0 0; padding-left: 18px; }
 .help b { color: var(--text); }
 
+/* page tabs (composer / waveform lab / effects) */
+.pages { display: flex; gap: 6px; margin-bottom: 10px; }
+.pages a {
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  text-decoration: none;
+}
+.pages a[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: #0b1020; }
+
 /* transport (stays on top while scrolling) */
 .transport {
   position: sticky;
@@ -258,6 +269,33 @@ input[type=number] {
   transition: opacity .2s, transform .2s;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* panel pages (waveform lab, effects) */
+.panels { display: grid; gap: 12px; margin-top: 4px; margin-bottom: 24px; }
+.panels section { padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.panels h2 { margin: 0 0 8px; font-size: 15px; }
+
+/* waveform lab page */
+#wave { display: block; width: 100%; height: 220px; border-radius: 6px; background: #12151c; cursor: crosshair; touch-action: none; }
+.presets { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+.presets button { padding: 0 4px; }
+.hint { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+.sound { display: grid; gap: 10px; }
+.sound label { color: var(--muted); }
+.sound strong { margin-left: 6px; color: var(--text); }
+#pitch { width: 100%; accent-color: var(--accent); }
+
+/* effects page */
+.song-info { margin: 0 0 8px; }
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.effects { display: grid; gap: 8px; margin-top: 8px; }
+.fx { padding: 10px; border: 1px solid var(--line); border-radius: 8px; }
+.fx:has(:checked) { border-color: var(--accent); }
+.fx-name { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.fx-name input { width: 20px; height: 20px; accent-color: var(--accent); }
+.param { display: grid; gap: 2px; margin-top: 8px; color: var(--muted); font-size: 13px; }
+.param output { margin-left: 4px; color: var(--text); }
+.param input { width: 100%; accent-color: var(--accent); }
 
 @media (min-width: 720px) {
   :root { --row: 32px; --keys: 64px; }

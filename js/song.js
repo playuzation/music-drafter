@@ -13,6 +13,7 @@ export const BPM_MIN = 30;
 export const BPM_MAX = 300;
 export const TRACK_TYPES = ['sine', 'triangle', 'square', 'sawtooth', 'drum'];
 export const OCTAVES = [2, 3, 4, 5, 6];
+export const SESSION_KEY = 'music-drafter:song'; // sessionStorage key: the current song, shared by the pages
 
 // song  = { format, version, bpm, scale, tracks: [{ type, octave, measures: [[note, ...], ...] }] }
 // note  = { start: 0-15, len: steps, deg: 1-8 (drum: kit slot), tie: joined to the next note of the same pitch }
@@ -153,6 +154,31 @@ export function attacksAt(song, m, s, first, last) {
 
 export const noteFreq = (song, track, deg) => midiFreq(degreeMidi(song.scale, track.octave, deg));
 export const noteName = (song, track, deg) => midiName(degreeMidi(song.scale, track.octave, deg));
+
+// ---- sounds (what the audio engine plays: { drum: 1-8 } | { wave, freq, dur (seconds) }) ----
+
+export const stepSeconds = song => 60 / song.bpm / STEPS_PER_BEAT;
+
+export function soundOf(song, track, deg, steps) {
+  if (track.type === 'drum') return { drum: deg };
+  return { wave: track.type, freq: noteFreq(song, track, deg), dur: steps * stepSeconds(song) };
+}
+
+// Sounds starting at (measure m, step s) while measures first..last are played.
+export const soundsAt = (song, m, s, first, last) => attacksAt(song, m, s, first, last).map(a => soundOf(song, a.track, a.deg, a.steps));
+
+// One pass through the whole song: time-ordered [{ time, ...sound }] and its length in seconds.
+export function songSounds(song) {
+  const last = measureCount(song) - 1;
+  const step = stepSeconds(song);
+  const sounds = [];
+  for (let m = 0; m <= last; m++) {
+    for (let s = 0; s < STEPS; s++) {
+      for (const sound of soundsAt(song, m, s, 0, last)) sounds.push({ time: (m * STEPS + s) * step, ...sound });
+    }
+  }
+  return { sounds, seconds: (last + 1) * STEPS * step };
+}
 
 // ---- JSON ----
 
