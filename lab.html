@@ -39,8 +39,13 @@
         <button data-smooth="3">3</button>
         <button data-smooth="4">4</button>
       </div>
+      <div class="strength">
+        <label for="strength">세기 <strong id="strength-label"></strong></label>
+        <input id="strength" type="range" min="0.25" max="8" step="0.25" disabled>
+      </div>
       <p class="hint">캔버스를 드래그해서 한 주기의 파형을 그리세요. 기본 파형을 불러와 고쳐도 됩니다. 소리를 내는 중에 그리면 소리도 바로 바뀝니다.
-        부드럽게 1~4를 고르면 그린 파형을 살짝(1)부터 크게(4)까지 다듬어 들려줍니다. 흐린 선은 원래 그린 모양입니다.</p>
+        부드럽게 1~4를 고르면 그린 파형을 살짝(1)부터 크게(4)까지 다듬어 들려줍니다. 흐린 선은 원래 그린 모양입니다.
+        세기를 움직이면 고른 단계를 얼마나 다듬을지 바꿀 수 있습니다(클수록 매끄럽게).</p>
     </section>
 
     <section class="sound">

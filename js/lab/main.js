@@ -10,10 +10,12 @@ const $ = id => document.getElementById(id);
 const canvas = $('wave');
 const pitch = $('pitch');
 const playButton = $('play');
+const strength = $('strength');
 
 let table = T.preset('sine'); // the cycle as drawn
 let level = 0; // smoothing level, 0 (off) to 4
-let shaped = T.smooth(table, level); // what is shown and heard: the drawn cycle after smoothing
+const widths = [...T.SMOOTHING]; // smoothing strength of each level; the strength slider retunes the selected one
+let shaped = T.smooth(table, widths[level]); // what is shown and heard: the drawn cycle after smoothing
 let last = null; // previous pointer position [x, v] while drawing
 let frame = 0;
 
@@ -54,7 +56,7 @@ function changed() {
   if (frame) return;
   frame = requestAnimationFrame(() => {
     frame = 0;
-    shaped = T.smooth(table, level);
+    shaped = T.smooth(table, widths[level]);
     draw();
     voice.setWave(T.harmonics(shaped));
   });
@@ -77,6 +79,13 @@ function showPitch() {
   $('pitch-label').textContent = `${midiName(m)} · ${midiFreq(m).toFixed(1)} Hz`;
 }
 
+// The strength slider follows the selected level and is off while smoothing is.
+function showStrength() {
+  strength.disabled = !level;
+  strength.value = widths[level];
+  $('strength-label').textContent = level ? `${level}단계 · ${widths[level]}` : '끔';
+}
+
 canvas.addEventListener('pointerdown', e => {
   canvas.setPointerCapture(e.pointerId);
   last = null;
@@ -97,9 +106,16 @@ for (const button of levels) {
   button.addEventListener('click', () => {
     level = +button.dataset.smooth;
     for (const b of levels) b.classList.toggle('on', b === button);
+    showStrength();
     changed();
   });
 }
+
+strength.addEventListener('input', () => {
+  widths[level] = +strength.value;
+  showStrength();
+  changed();
+});
 
 pitch.addEventListener('input', () => {
   showPitch();
@@ -116,4 +132,5 @@ playButton.addEventListener('click', () => {
 window.addEventListener('resize', draw);
 voice.setWave(T.harmonics(shaped));
 showPitch();
+showStrength();
 draw();
