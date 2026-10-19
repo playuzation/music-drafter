@@ -281,11 +281,12 @@ input[type=number] {
 .levels { display: grid; grid-template-columns: auto repeat(5, minmax(0, 1fr)); align-items: center; gap: 6px; margin-top: 8px; }
 .levels span { color: var(--muted); }
 .presets button, .levels button { padding: 0 4px; }
+.strength { display: grid; gap: 4px; margin-top: 10px; }
 .hint { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
 .sound { display: grid; gap: 10px; }
-.sound label { color: var(--muted); }
-.sound strong { margin-left: 6px; color: var(--text); }
-#pitch { width: 100%; accent-color: var(--accent); }
+.sound label, .strength label { color: var(--muted); }
+.sound strong, .strength strong { margin-left: 6px; color: var(--text); }
+#pitch, #strength { width: 100%; accent-color: var(--accent); }
 
 /* effects page */
 .song-info { margin: 0 0 8px; }

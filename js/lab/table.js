@@ -25,13 +25,13 @@ export function paint(table, x0, v0, x1, v1) {
   }
 }
 
-// Gaussian widths (in samples of the cycle) for smoothing levels 0-4. Each level halves the range of harmonics
-// that survive: level 1 only trims jagged edges, level 4 keeps little beyond the second harmonic.
+// Default Gaussian widths (in samples of the cycle) for smoothing levels 0-4. Each level halves the range of
+// harmonics that survive: level 1 only trims jagged edges, level 4 keeps little beyond the second harmonic.
 export const SMOOTHING = [0, 0.75, 1.5, 3, 6];
 
-// The cycle blurred with a Gaussian of width SMOOTHING[level], wrapping around because the wave repeats.
-export function smooth(table, level) {
-  const sigma = SMOOTHING[level];
+// The cycle blurred with a Gaussian of width sigma (in samples; 0 leaves it as is), wrapping around because the
+// wave repeats.
+export function smooth(table, sigma) {
   if (!sigma) return Float32Array.from(table);
   const n = table.length;
   const radius = Math.ceil(3 * sigma);
