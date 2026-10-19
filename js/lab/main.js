@@ -11,11 +11,14 @@ const canvas = $('wave');
 const pitch = $('pitch');
 const playButton = $('play');
 
-let table = T.preset('sine');
+let table = T.preset('sine'); // the cycle as drawn
+let level = 0; // smoothing level, 0 (off) to 4
+let shaped = T.smooth(table, level); // what is shown and heard: the drawn cycle after smoothing
 let last = null; // previous pointer position [x, v] while drawing
 let frame = 0;
 
 // One cycle; sample i sits at the middle of its slot, and the line wraps to the neighbouring cycles at the edges.
+// While smoothing, the cycle as drawn shows faintly behind the smoothed one.
 function draw() {
   const dpr = window.devicePixelRatio || 1;
   const w = (canvas.width = canvas.clientWidth * dpr);
@@ -31,24 +34,29 @@ function draw() {
   g.moveTo(0, h / 2);
   g.lineTo(w, h / 2);
   g.stroke();
-  g.strokeStyle = '#7aa2ff';
-  g.lineWidth = 2.5 * dpr;
   g.lineJoin = 'round';
-  g.beginPath();
-  for (let i = -1; i <= T.SIZE; i++) {
-    const v = table[(i + T.SIZE) % T.SIZE];
-    g.lineTo(((i + 0.5) / T.SIZE) * w, ((1 - v) / 2) * h);
-  }
-  g.stroke();
+  const line = (t, color, width) => {
+    g.strokeStyle = color;
+    g.lineWidth = width * dpr;
+    g.beginPath();
+    for (let i = -1; i <= T.SIZE; i++) {
+      const v = t[(i + T.SIZE) % T.SIZE];
+      g.lineTo(((i + 0.5) / T.SIZE) * w, ((1 - v) / 2) * h);
+    }
+    g.stroke();
+  };
+  if (level) line(table, 'rgba(122, 162, 255, 0.35)', 1.5);
+  line(shaped, '#7aa2ff', 2.5);
 }
 
-// Redraws and updates the sound at most once per frame while drawing.
+// Re-smooths, redraws and updates the sound at most once per frame while drawing.
 function changed() {
   if (frame) return;
   frame = requestAnimationFrame(() => {
     frame = 0;
+    shaped = T.smooth(table, level);
     draw();
-    voice.setWave(T.harmonics(table));
+    voice.setWave(T.harmonics(shaped));
   });
 }
 
@@ -84,6 +92,15 @@ for (const button of document.querySelectorAll('[data-preset]')) {
   });
 }
 
+const levels = document.querySelectorAll('[data-smooth]');
+for (const button of levels) {
+  button.addEventListener('click', () => {
+    level = +button.dataset.smooth;
+    for (const b of levels) b.classList.toggle('on', b === button);
+    changed();
+  });
+}
+
 pitch.addEventListener('input', () => {
   showPitch();
   voice.setFreq(midiFreq(+pitch.value));
@@ -97,6 +114,6 @@ playButton.addEventListener('click', () => {
 });
 
 window.addEventListener('resize', draw);
-voice.setWave(T.harmonics(table));
+voice.setWave(T.harmonics(shaped));
 showPitch();
 draw();
