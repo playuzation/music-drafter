@@ -278,7 +278,9 @@ input[type=number] {
 /* waveform lab page */
 #wave { display: block; width: 100%; height: 220px; border-radius: 6px; background: #12151c; cursor: crosshair; touch-action: none; }
 .presets { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
-.presets button { padding: 0 4px; }
+.levels { display: grid; grid-template-columns: auto repeat(5, minmax(0, 1fr)); align-items: center; gap: 6px; margin-top: 8px; }
+.levels span { color: var(--muted); }
+.presets button, .levels button { padding: 0 4px; }
 .hint { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
 .sound { display: grid; gap: 10px; }
 .sound label { color: var(--muted); }

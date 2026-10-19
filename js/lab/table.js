@@ -1,5 +1,5 @@
-// Wave table (tree: lab/main → table): one drawn cycle as SIZE samples in [-1, 1], presets, and conversion to the
-// harmonic coefficients Web Audio's PeriodicWave takes. Pure module.
+// Wave table (tree: lab/main → table): one drawn cycle as SIZE samples in [-1, 1], presets, smoothing, and conversion
+// to the harmonic coefficients Web Audio's PeriodicWave takes. Pure module.
 
 export const SIZE = 64;
 
@@ -23,6 +23,21 @@ export function paint(table, x0, v0, x1, v1) {
   for (let i = Math.min(i0, i1); i <= Math.max(i0, i1); i++) {
     table[i] = clamp(i0 === i1 ? v1 : v0 + ((v1 - v0) * (i - i0)) / (i1 - i0));
   }
+}
+
+// Gaussian widths (in samples of the cycle) for smoothing levels 0-4. Each level halves the range of harmonics
+// that survive: level 1 only trims jagged edges, level 4 keeps little beyond the second harmonic.
+export const SMOOTHING = [0, 0.75, 1.5, 3, 6];
+
+// The cycle blurred with a Gaussian of width SMOOTHING[level], wrapping around because the wave repeats.
+export function smooth(table, level) {
+  const sigma = SMOOTHING[level];
+  if (!sigma) return Float32Array.from(table);
+  const n = table.length;
+  const radius = Math.ceil(3 * sigma);
+  const kernel = Array.from({ length: 2 * radius + 1 }, (_, j) => Math.exp(-((j - radius) ** 2) / (2 * sigma * sigma)));
+  const total = kernel.reduce((sum, k) => sum + k, 0);
+  return Float32Array.from(table, (_, i) => kernel.reduce((sum, k, j) => sum + k * table[(i + j - radius + n) % n], 0) / total);
 }
 
 // Fourier coefficients (real = cosine, imag = sine terms) of the cycle without its DC offset, scaled so the
